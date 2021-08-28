@@ -1,22 +1,17 @@
 <?php
 /**
- * @copyright Copyright (c) 2016 Green World FinTech Service Co., Ltd. (https://www.ecpay.com.tw)
- * @version 1.1.2107130
+ * 
  *
- * Plugin Name: ECPay Invoice for WooCommerce
- * Plugin URI: https://www.ecpay.com.tw
+ * Plugin Name: ECPay Invoice Woocommerce
+ *
  * Description: ECPay Invoice For WooCommerce
- * Version: 1.1.2107130
- * Author: ECPay Green World FinTech Service Co., Ltd.
- * Author URI: https://www.ecpay.com.tw
- * License: GPLv2
- * License URI: https://www.gnu.org/licenses/gpl-2.0.txt
- * WC requires at least: 3
- * WC tested up to: 5.3.0
+ * Version: 1.0
+ * Author: ymlin
+ 
  */
 
 defined( 'ABSPATH' ) or exit;
-define( 'ECPAY_INVOICE_PLUGIN_VERSION', '1.1.2107130' );
+//define( 'ECPAY_INVOICE_PLUGIN_VERSION', '1.1.2007070' );
 
 // include Invoice SDK
 require_once( 'Ecpay_Invoice_Shell.php' );
@@ -40,7 +35,7 @@ class WC_ECPayInvoice
         if( is_admin() && ! defined( 'DOING_AJAX' ) ) {
 
             // 載入設定頁面
-            add_filter( 'woocommerce_get_settings_pages', array( __CLASS__, 'add_settings_page' ) );
+            add_filter( 'woocommerce_get_settings_pages', array( $this, 'add_settings_page' ) );
 
             // 後臺手動開立按鈕
             add_action( 'woocommerce_admin_order_data_after_order_details', array( $this, 'action_woocommerce_admin_generate_invoice_manual' ));
@@ -70,8 +65,8 @@ class WC_ECPayInvoice
     */
 
     /**
-     * 自動開立
-     */
+    * 自動開立
+    */
     public function ecpay_auto_invoice($orderId, $SimulatePaid = 0)
     {
         global $woocommerce, $post;
@@ -105,63 +100,62 @@ class WC_ECPayInvoice
         wp_register_script('plugin_ecpay_invoice_frontend_script', plugins_url('/js/ecpay_invoice_frontend.js', __FILE__), array('jquery'),ECPAY_INVOICE_PLUGIN_VERSION, true);
         wp_enqueue_script('plugin_ecpay_invoice_frontend_script');
 
+        //
+
         // 載具資訊
-        $configInvoice = get_option('wc_ecpayinvoice_active_model') ;
+        $fields['billing']['billing_carruer_type'] = [
+            'type'      => 'select',
+			 'default' => '2',
+            'label'         => '載具類別',
+            'required'      => false,
+            'priority'      => 200,
+			
+            'options'   => [
+                
+                '2' => '自然人憑證',
+                '3' => '手機條碼'
+            ]
+			
 
-        // 判斷是否啟動模組
-        if($configInvoice['wc_ecpay_invoice_enabled'] == 'enable') {
-            $fields['billing']['billing_carruer_type'] = [
-                'type'      => 'select',
-                'label'         => '載具類別',
-                'required'      => false,
-                'priority'      => 200,
-                'options'   => [
-                    '0' => '索取紙本',
-                    '1' => '雲端發票(中獎寄送紙本)',
-                    '2' => '自然人憑證',
-                    '3' => '手機條碼'
-                ]
+        ];
 
-            ];
+        $fields['billing']['billing_invoice_type'] = [
+            'type'          => 'select',
+            'label'         => '發票開立',
+            'required'      => false,
+            'priority'      => 210,
+            'options'   => [
+                'p' => '個人',
+                'c' => '公司',
+                'd' => '捐贈'
+            ]
+        ];
 
-            $fields['billing']['billing_invoice_type'] = [
-                'type'          => 'select',
-                'label'         => '發票開立',
-                'required'      => false,
-                'priority'      => 210,
-                'options'   => [
-                    'p' => '個人',
-                    'c' => '公司',
-                    'd' => '捐贈'
-                ]
-            ];
-
-            $fields['billing']['billing_customer_identifier'] = [
-                'type'          => 'text',
-                'label'         => '統一編號',
-                'required'      => false,
-                'priority'      => 220,
-            ];
+        $fields['billing']['billing_customer_identifier'] = [
+            'type'          => 'text',
+            'label'         => '統一編號',
+            'required'      => false,
+            'priority'      => 220,
+        ];
 
 
 
-            $fields['billing']['billing_love_code'] = [
-                'type'          => 'text',
-                'label'         => '捐贈碼',
-                'desc_tip'      => true,
-                'required'      => false,
-                'priority'      => 230,
-            ];
+        $fields['billing']['billing_love_code'] = [
+            'type'          => 'text',
+            'label'         => '捐贈碼',
+            'desc_tip'      => true,
+            'required'      => false,
+            'priority'      => 230,
+        ];
 
 
 
-            $fields['billing']['billing_carruer_num'] = [
-                'type'          => 'text',
-                'label'         => '載具編號',
-                'required'      => false,
-                'priority'      => 240,
-            ];
-        }
+        $fields['billing']['billing_carruer_num'] = [
+            'type'          => 'text',
+            'label'         => '載具編號',
+            'required'      => false,
+            'priority'      => 240,
+        ];
 
         return $fields;
     }
@@ -314,8 +308,8 @@ class WC_ECPayInvoice
     */
 
     /**
-     * AJAX後端接收
-     */
+    * AJAX後端接收
+    */
     function add_ajax_actions()
     {
         // 作廢發票
@@ -326,9 +320,9 @@ class WC_ECPayInvoice
     }
 
     /**
-     * 參數設定頁面
-     */
-    public static function add_settings_page($settings)
+    * 參數設定頁面
+    */
+    public function add_settings_page()
     {
         $settings[] = require_once( 'class-wc-ecpayinvoice-settings.php' );
 
@@ -336,8 +330,8 @@ class WC_ECPayInvoice
     }
 
     /**
-     * 後端接收手動開立發票請求
-     */
+    * 後端接收手動開立發票請求
+    */
     public function orderid_return()
     {
         global $woocommerce, $post, $wpdb;
@@ -357,8 +351,8 @@ class WC_ECPayInvoice
     }
 
     /**
-     * 後端接收作廢發票請求
-     */
+    * 後端接收作廢發票請求
+    */
     public function orderid_return_issue_invalid()
     {
         global $woocommerce, $post, $wpdb;
@@ -378,8 +372,8 @@ class WC_ECPayInvoice
     }
 
     /**
-     * 開立發票
-     */
+    * 開立發票
+    */
     public function gen_invoice($orderId, $mode = 'manual')
     {
 
@@ -391,10 +385,7 @@ class WC_ECPayInvoice
         $orderInfo  = get_post_meta($orderId);
 
         // 付款成功次數 第一次付款或沒有此欄位則設定為空值
-        $totalSuccessTimes = '';
-        if (isset($orderInfo['_total_success_times'][0])) {
-            $totalSuccessTimes = ( $orderInfo['_total_success_times'][0] == '' ) ? '' :  $orderInfo['_total_success_times'][0] ;
-        }
+        $totalSuccessTimes = ( isset($orderInfo['_total_success_times'][0]) && $orderInfo['_total_success_times'][0] == '' ) ? '' :  $orderInfo['_total_success_times'][0] ;
 
         $invoiceEnable = false ;
         $invoiceRemark = '' ;
@@ -406,7 +397,7 @@ class WC_ECPayInvoice
                 $_ecpay_invoice_status = '_ecpay_invoice_status'.$totalSuccessTimes ;
 
                 if( ( !isset($orderInfo[$_ecpay_invoice_status][0]) || $orderInfo[$_ecpay_invoice_status][0] == 0 ) && $orderStatus == 'processing' ) {
-                    $invoiceEnable = true ;
+                        $invoiceEnable = true ;
                 }
 
             } else {
@@ -583,7 +574,7 @@ class WC_ECPayInvoice
                 }
 
                 // 運費
-                $shippingTotal = number_format( (float) $orderObj->get_total_shipping() + (float) $orderObj->get_shipping_tax(), wc_get_price_decimals(), '.', '' );
+                $shippingTotal = $orderObj->get_total_shipping();
 
                 if($shippingTotal != 0) {
 
@@ -675,8 +666,8 @@ class WC_ECPayInvoice
     }
 
     /**
-     * 作廢發票
-     */
+    * 作廢發票
+    */
     public function issue_invalid_invoice($orderId)
     {
 
